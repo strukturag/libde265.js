@@ -15,9 +15,10 @@ optimizations!
 - Execute the `build.sh`, this will download and compile libde265 using
   Emscripten and will generate the `libde265.js` file.
 
-## Example
+## Examples
 
-A small example can be found in the `demo` folder.
+A small example can be found in the `demo` folder and on
+https://strukturag.github.io/libde265.js/.
 
 ## Known issues
 
