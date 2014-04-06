@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>libde265.js</title>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.11/require.min.js"></script>
+<script>
+<!--
+require.config({
+    paths: {
+        "libde265": "//rawgithub.com/strukturag/libde265.js/master/libde265"
+    },
+    waitSeconds: 15
+});
+
+require(['libde265'], function(libde265) {
+    
+    var playback = function(url) {
+        url = url || "paris-ra-wpp.bin";
+        var req = new XMLHttpRequest();
+        req.open("get", url, true);
+        req.responseType = "arraybuffer";
+        
+        var canvas = document.getElementById("video");
+        var ctx = canvas.getContext("2d");
+        var imageData = null;
+        var imageDataData = null;
+
+        req.onload = function(event) {
+            // TODO(fancycode): move decoding to WebWorker
+            var decoder = libde265.de265_new_decoder();
+            libde265.de265_set_parameter_bool(decoder, libde265.DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, true);
+            var data = req.response;
+            var pos = 0;
+            var remaining = data.byteLength;
+            var more = Module._malloc(2);
+            
+            var displayImage = function(img) {
+                // Do the YUV -> RGB conversion
+                // TODO(fancycode): move to WebWorker
+                var i;
+                var w = libde265.de265_get_image_width(img, 0);
+                var h = libde265.de265_get_image_height(img, 0);
+                if (w != canvas.width || h != canvas.height || !imageData) {
+                    canvas.width = w;
+                    canvas.height = h;
+                    imageData = ctx.createImageData(w, h);
+                    imageDataData = imageData.data;
+                    for (i=0; i<w*h; i++) {
+                        imageDataData[i*4+3] = 255;
+                    }
+                }
+                var y = libde265.de265_get_image_plane(img, 0);
+                var u = libde265.de265_get_image_plane(img, 1);
+                var v = libde265.de265_get_image_plane(img, 2);
+                var yval;
+                var uval;
+                var vval;
+                var HEAPU8 = Module.HEAPU8;
+                var xpos = 0;
+                var ypos = 0;
+                var w2 = w >> 1;
+                for (i=0; i<w*h; i++) {
+                    yval = HEAPU8[y + i];
+                    uval = HEAPU8[u + ((ypos >> 1) * w2) + (xpos >> 1)];
+                    vval = HEAPU8[v + ((ypos >> 1) * w2) + (xpos >> 1)];
+                    yval = 1.164 * (yval - 16);
+                    vval = (vval - 128);
+                    uval = (uval - 128);
+                    imageDataData[i*4+0] = yval + 1.596 * vval;
+                    imageDataData[i*4+1] = yval - 0.813 * vval - 0.391 * uval;
+                    imageDataData[i*4+2] = yval + 2.018 * uval;
+                    xpos++;
+                    if (xpos === w) {
+                        xpos = 0;
+                        ypos++;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            };
+            
+            var decode = function() {
+                var err;
+                if (remaining === 0) {
+                    err = libde265.de265_flush_data(decoder);
+                } else {
+                    var l = 4096;
+                    if (l > remaining) {
+                        l = remaining;
+                    }
+                    var tmp = new Uint8Array(data, pos, l);
+                    err = libde265.de265_push_data(decoder, tmp, l, 0, 0);
+                    pos += l;
+                    remaining -= l;
+                }
+                if (!libde265.de265_isOK(err)) {
+                    console.log("Pushed", err, libde265.de265_get_error_text(err));
+                    return;
+                }
+                
+                Module.setValue(more, "i16", 0);
+                while (1) {
+                    err = libde265.de265_decode(decoder, more);
+                    switch (err) {
+                    case 13:
+                        Module.setValue(more, "i16", 0);
+                        break;
+                    default:
+                        if (!libde265.de265_isOK(err)) {
+                            console.log("Decoded", err, libde265.de265_get_error_text(err));
+                            Module.setValue(more, "i16", 0);
+                        }
+                    }
+                    
+                    var img = libde265.de265_get_next_picture(decoder);
+                    if (img) {
+                        displayImage(img);
+                    }
+                    if (img || Module.getValue(more, "i16") === 0) {
+                        break;
+                    }
+                }
+                if (remaining > 0 || Module.getValue(more, "i16") !== 0) {
+                    setTimeout(decode, 0);
+                    return;
+                }
+                
+                libde265.de265_free_decoder(decoder);
+                Module._free(more);
+            }
+            
+            setTimeout(decode, 0);
+        };
+        
+        req.send();
+    };
+    
+    var button = document.getElementById("play");
+    button.addEventListener("click", function() {
+        playback();
+        return false;
+    }, false); 
+    
+});
+-->
+</script>
+</head>
+<body>
+    <h1>libde265.js</h1>
+    <a href="https://github.com/strukturag/libde265.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+    <div>
+        <div>Simple HEVC/H.265 bitstream player in pure JavaScript, powered by <a href="http://www.libde265.org">libde265</a>.</div>
+        <div><small>Copyright &copy; 2014 by <a href="http://www.struktur.de">struktur AG</a></small></div>
+        <canvas id="video" width="0" height="0"></canvas>
+    </div>
+    <button id="play">Play</button>
+</body>
+</html>
