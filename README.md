@@ -14,6 +14,9 @@ optimizations!
 - Install [Emscripten][1] and put into your `PATH`
 - Execute the `build.sh`, this will download and compile libde265 using
   Emscripten and will generate the `libde265.js` file.
+- If the version of your default LLVM is below 3.2, you might need to
+  install the package `llvm-3.2` (or newer) and set the environment
+  variable `LLVM_ADD_VERSION` to `3.2` (or whatever you installed).
 
 ## Examples
 
