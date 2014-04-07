@@ -15,7 +15,34 @@ emcc libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.so \
     -o libde265.js \
     -s NO_EXIT_RUNTIME=1 \
     -s TOTAL_MEMORY=268435456 \
-    -s EXPORT_ALL=1 \
+    -s EXPORTED_FUNCTIONS="[ \
+        '_de265_get_version', \
+        '_de265_get_version_number', \
+        '_de265_get_error_text', \
+        '_de265_isOK', \
+        '_de265_get_image_width', \
+        '_de265_get_image_height', \
+        '_de265_get_chroma_format', \
+        '_de265_get_image_plane', \
+        '_de265_get_image_PTS', \
+        '_de265_get_image_user_data', \
+        '_de265_new_decoder', \
+        '_de265_free_decoder', \
+        '_de265_push_data', \
+        '_de265_push_NAL', \
+        '_de265_flush_data', \
+        '_de265_get_number_of_input_bytes_pending', \
+        '_de265_get_number_of_NAL_units_pending', \
+        '_de265_decode', \
+        '_de265_reset', \
+        '_de265_peek_next_picture', \
+        '_de265_get_next_picture', \
+        '_de265_release_next_picture', \
+        '_de265_get_warning', \
+        '_de265_set_parameter_bool', \
+        '_de265_set_parameter_int', \
+        '_de265_get_parameter_bool'
+    ]" \
     -O2 \
     --pre-js pre.js \
     --post-js post.js
