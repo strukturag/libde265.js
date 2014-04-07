@@ -9,8 +9,22 @@ require(['libde265'], function(libde265) {
         var canvas = document.getElementById("video");
         var ctx = canvas.getContext("2d");
         var imageData = null;
+        var start = null;
+        var frames = 0;
+        var fps = document.getElementById("fps");
 
         var displayImage = function(img) {
+            if (!start) {
+                start = new Date();
+                fps.innerHTML = "";
+            } else {
+                frames += 1;
+                var duration = (new Date()) - start;
+                if (duration > 1000) {
+                    fps.innerHTML = Number(frames / (duration * 0.001)).toFixed(2) + " fps";
+                }
+            }
+
             var w = img.get_width();
             var h = img.get_height();
             if (w != canvas.width || h != canvas.height || !imageData) {
