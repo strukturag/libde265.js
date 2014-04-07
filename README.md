@@ -29,8 +29,6 @@ https://strukturag.github.io/libde265.js/.
 - More code from libde265 should be made asm.js aware
 - Decoding and YUV -> RGB conversion should be made asynchronous through
   WebWorkers where available
-- Only low-level functions are available for now, a better JavaScript
-  API would be nice
 
 [1]: http://emscripten.org
 
