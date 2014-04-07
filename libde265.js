@@ -8631,7 +8631,7 @@ run();
                 voffset = v + ((ypos >> 1) * stridev);
             }
         }
-        callback(this, imageData);
+        callback(imageData);
     };
 
     var Decoder = function() {

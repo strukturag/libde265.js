@@ -23,8 +23,8 @@ require(['libde265'], function(libde265) {
                 }
             }
             
-            img.display(imageData, function(displayImage, displayImageData) {
-                ctx.putImageData(imageData, 0, 0);
+            img.display(imageData, function(displayImageData) {
+                ctx.putImageData(displayImageData, 0, 0);
             });
         };
 
