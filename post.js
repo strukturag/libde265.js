@@ -320,7 +320,6 @@
         this.image_callback = null;
         this.more = _malloc(2);
         this.ctx = api.de265_new_decoder();
-        api.de265_set_parameter_bool(this.ctx, api.DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, true);
     };
 
     /**
