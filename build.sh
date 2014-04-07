@@ -14,8 +14,7 @@ fi
 emcc libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.so \
     -o libde265.js \
     -s NO_EXIT_RUNTIME=1 \
-    -s TOTAL_MEMORY=134217728 \
-    -s ALLOW_MEMORY_GROWTH=1 \
+    -s TOTAL_MEMORY=268435456 \
     -s EXPORT_ALL=1 \
     -O2 \
     --pre-js pre.js \
