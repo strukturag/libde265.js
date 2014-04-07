@@ -59,7 +59,7 @@ require(['libde265'], function(libde265) {
                 if (remaining === 0) {
                     err = decoder.flush();
                 } else {
-                    var l = 40960;
+                    var l = 4096;
                     if (l > remaining) {
                         l = remaining;
                     }
