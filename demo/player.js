@@ -1,3 +1,4 @@
+if (typeof Int32Array !== 'undefined' && typeof Float64Array !== 'undefined' && !!(new Int32Array(1)['subarray']) && !!(new Int32Array(1)['set'])) {
 require(['libde265'], function(libde265) {
     
     var playback = function(url) {
@@ -103,3 +104,11 @@ require(['libde265'], function(libde265) {
     }, false); 
     
 });
+} else {
+    window.onload = function() {
+        var button = document.getElementById("play");
+        button.style.display = "none";
+        var fps = document.getElementById("fps");
+        fps.innerHTML = 'This player is not supported with your Browser for now. Please use <a href="http://www.getfirefox.com">Firefox</a> or <a href="http://www.google.com/chrome/">Chrome</a>.';
+    };
+}
