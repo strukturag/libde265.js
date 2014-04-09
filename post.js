@@ -18,8 +18,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with libde265.js.  If not, see <http://www.gnu.org/licenses/>.
  */
-// NOTE: wrapped inside "define(..., function(...) {" block from pre.js
-
 // don't pollute the global namespace
 delete this['Module'];
 
@@ -579,4 +577,6 @@ if (typeof define === "function" && define.amd) {
         return libde265;
     });
 }
+
+// NOTE: wrapped inside "(function() {" block from pre.js
 }).call(this);
