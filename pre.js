@@ -18,9 +18,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with libde265.js.  If not, see <http://www.gnu.org/licenses/>.
  */
-/** @expose */
-define([], function() {
-
+(function() {
 var Module = {
     print: function(text) {
         text = Array.prototype.slice.call(arguments).join(' ');

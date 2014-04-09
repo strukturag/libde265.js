@@ -3,19 +3,57 @@
 <head>
 <meta charset='utf-8'>
 <title>libde265.js</title>
-<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.11/require.min.js"></script>
+<style type="text/css">
+body, button {
+    font: 13px Helvetica, arial, freesans, clean, sans-serif;
+}
+</style>
+<script type="text/javascript" src="../lib/libde265.min.js"></script>
 <script>
 <!--
-require.config({
-    paths: {
-        "libde265": "../lib/libde265.min"
-    },
-    waitSeconds: 15
-});
+var VIDEO_URL = "spreedmovie.hevc";
+
+window.onload = function() {
+    var video = document.getElementById("video");
+    var status = document.getElementById("status");
+
+    var player = new libde265.RawPlayer(video);
+    player.set_status_callback(function(msg, fps) {
+        switch (msg) {
+        case "loading":
+            status.innerHTML = "Loading movie...";
+            break;
+        case "initializing":
+            status.innerHTML = "Initializing...";
+            break;
+        case "playing":
+            status.innerHTML = "Playing...";
+            break;
+        case "stopped":
+            status.innerHTML = "";
+            break;
+        case "fps":
+            status.innerHTML = Number(fps).toFixed(2) + " fps";
+            break;
+        default:
+            status.innerHTML = msg;
+        }
+    });
+
+    var playback = function(event) {
+        event.preventDefault();
+        player.playback(VIDEO_URL);
+    };
+
+    var button = document.getElementById("play");
+    if (button.addEventListener) {
+        button.addEventListener("click", playback, false);
+    } else if (button.attachEvent){
+        button.attachEvent('onclick', playback);
+    }
+};
 -->
 </script>
-<script type="text/javascript" src="player.js"></script>
-</head>
 <body>
     <h1>libde265.js</h1>
     <div>
@@ -23,6 +61,6 @@ require.config({
         <canvas id="video" width="0" height="0"></canvas>
     </div>
     <button id="play">Play</button>
-    <span id="fps"></span>
+    <span id="status"></span>
 </body>
 </html>
