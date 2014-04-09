@@ -18,7 +18,7 @@ require(['libde265'], function(libde265) {
         var displayImage = function(img) {
             if (!start) {
                 start = new Date();
-                fps.innerHTML = "";
+                fps.innerHTML = "Playing...";
             } else {
                 frames += 1;
                 var duration = (new Date()) - start;
@@ -46,7 +46,7 @@ require(['libde265'], function(libde265) {
 
         req.onload = function(event) {
             // TODO(fancycode): move decoding to WebWorker
-            fps.innerHTML = "Playing...";
+            fps.innerHTML = "Initializing...";
             var decoder = new libde265.Decoder();
             decoder.set_image_callback(function(image) {
                 displayImage(image);
