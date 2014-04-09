@@ -28,35 +28,40 @@ a {
 <!--
 var VIDEO_URL = "spreedmovie.hevc";
 
+var player = null;
+
 window.onload = function() {
     var video = document.getElementById("video");
     var status = document.getElementById("status");
 
-    var player = new libde265.RawPlayer(video);
-    player.set_status_callback(function(msg, fps) {
-        switch (msg) {
-        case "loading":
-            status.innerHTML = "Loading movie...";
-            break;
-        case "initializing":
-            status.innerHTML = "Initializing...";
-            break;
-        case "playing":
-            status.innerHTML = "Playing...";
-            break;
-        case "stopped":
-            status.innerHTML = "";
-            break;
-        case "fps":
-            status.innerHTML = Number(fps).toFixed(2) + " fps";
-            break;
-        default:
-            status.innerHTML = msg;
-        }
-    });
-
     var playback = function(event) {
         event.preventDefault();
+        if (player) {
+            player.stop();
+        }
+
+        player = new libde265.RawPlayer(video);
+        player.set_status_callback(function(msg, fps) {
+            switch (msg) {
+            case "loading":
+                status.innerHTML = "Loading movie...";
+                break;
+            case "initializing":
+                status.innerHTML = "Initializing...";
+                break;
+            case "playing":
+                status.innerHTML = "Playing...";
+                break;
+            case "stopped":
+                status.innerHTML = "";
+                break;
+            case "fps":
+                status.innerHTML = Number(fps).toFixed(2) + " fps";
+                break;
+            default:
+                status.innerHTML = msg;
+            }
+        });
         player.playback(VIDEO_URL);
     };
 
