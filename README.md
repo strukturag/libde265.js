@@ -25,7 +25,6 @@ https://strukturag.github.io/libde265.js/.
 
 ## Known issues
 
-- Optimizing through closure compiler doesn't work yet
 - More code from libde265 should be made asm.js aware
 - Decoding and YUV -> RGB conversion should be made asynchronous through
   WebWorkers where available
