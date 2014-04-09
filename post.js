@@ -422,6 +422,7 @@ RawPlayer.prototype._reset = function() {
     this.start = null;
     this.frames = 0;
     this.image_data = null;
+    this.running = false;
 };
 
 /** @expose */
@@ -491,6 +492,10 @@ RawPlayer.prototype._handle_onload = function(request, event) {
     var remaining = data.byteLength;
 
     var decode = function() {
+        if (!that.running) {
+            return;
+        }
+
         var err;
         if (remaining === 0) {
             err = decoder.flush();
@@ -538,6 +543,7 @@ RawPlayer.prototype.playback = function(url) {
         that._handle_onload(request, event);
     };
     this._set_status("loading");
+    this.running = true;
     request.send();
 };
 
