@@ -526,6 +526,7 @@ RawPlayer.prototype._handle_onload = function(request, event) {
             }
             
             decoder.free();
+            that.stop();
         });
     };
 
