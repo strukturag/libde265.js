@@ -2,7 +2,10 @@
 
 Pure JavaScript HEVC/H.265 video decoding library using libde265.
 
-Compiled from libde265 using Emscripten.
+Compiled from libde265 using Emscripten. Should run in all current
+browsers like Google Chrome 33+, Firefox 28+, IE 11+, Opera 20+ and
+Safari 7+ on OSX Mavericks. Older versions might work, but this is
+mostly untested.
 
 NOTE: This is a very early preview which needs more testing and lots of
 optimizations!
