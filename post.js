@@ -216,7 +216,8 @@ var libde265 = {
  * 
  * @constructor
  */
-var Image = function(img) {
+var Image = function(decoder, img) {
+    this.decoder = decoder;
     this.img = img;
     this.width = null;
     this.height = null;
@@ -252,7 +253,6 @@ Image.prototype.get_height = function() {
  * @expose
  */
 Image.prototype.display = function(imageData, callback) {
-    // TODO(fancycode): move to WebWorker
     var w = this.get_width();
     var h = this.get_height();
     var stride = _malloc(4);
@@ -263,47 +263,34 @@ Image.prototype.display = function(imageData, callback) {
     var v = libde265.de265_get_image_plane(this.img, 2, stride);
     var stridev = getValue(stride, "i32");
     _free(stride);
-    var yval;
-    var uval;
-    var vval;
-    var xpos = 0;
-    var ypos = 0;
-    var w2 = w >> 1;
-    var imageDataData = imageData.data;
-    var maxi = w2*h;
-    var yoffset = y;
-    var uoffset = u;
-    var voffset = v;
-    var x2;
-    var i2;
-    var src = HEAPU8;
-    for (var i=0; i<maxi; i++) {
-        i2 = i << 1;
-        x2 = (xpos << 1);
-        yval = 1.164 * (src[yoffset + x2] - 16);
 
-        uval = src[uoffset + xpos] - 128;
-        vval = src[voffset + xpos] - 128;
-        imageDataData[(i2<<2)+0] = yval + 1.596 * vval;
-        imageDataData[(i2<<2)+1] = yval - 0.813 * vval - 0.391 * uval;
-        imageDataData[(i2<<2)+2] = yval + 2.018 * uval;
-
-        yval = 1.164 * (src[yoffset + x2 + 1] - 16);
-        imageDataData[((i2+1)<<2)+0] = yval + 1.596 * vval;
-        imageDataData[((i2+1)<<2)+1] = yval - 0.813 * vval - 0.391 * uval;
-        imageDataData[((i2+1)<<2)+2] = yval + 2.018 * uval;
-
-        xpos++;
-        if (xpos === w2) {
-            xpos = 0;
-            ypos++;
-            yoffset += stridey;
-            uoffset = u + ((ypos >> 1) * strideu);
-            voffset = v + ((ypos >> 1) * stridev);
-        }
-    }
-    callback(imageData);
+    this.decoder.convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, imageData, callback);
 };
+
+var worker_func = function() {
+    self.addEventListener("message", function(e) {
+        var data = e.data;
+        switch (data["cmd"]) {
+        case "start":
+            break;
+
+        case "stop":
+            self.close();
+            break;
+
+        case "convert":
+            var img = _do_convert_yuv2rgb(data["data"]["y"], data["data"]["u"], data["data"]["v"], data["data"]["w"], data["data"]["h"], data["data"]["stridey"], data["data"]["strideu"], data["data"]["stridev"]);
+            this.postMessage({"cmd": "converted", "data": {"image": img}});
+            break;
+
+        default:
+            // ignore unknown commands
+            break;
+        }
+    }, 0);
+};
+
+var worker_blob_url = null;
 
 /**
  * The HEVC/H.265 decoder
@@ -314,12 +301,52 @@ var Decoder = function() {
     this.image_callback = null;
     this.more = _malloc(2);
     this.ctx = libde265.de265_new_decoder();
+    if (typeof Worker !== "undefined" && typeof Uint8ClampedArray !== "undefined" && typeof Blob !== "undefined") {
+        var that = this;
+        this.yuv2rgb_callbacks = [];
+        if (worker_blob_url === null) {
+            // load worker from inplace blob so we don't have to depend
+            // on additional external files
+            var blob = new Blob([
+                "(function() {\n",
+                _do_convert_yuv2rgb.toString() + ";\n",
+                worker_func.toString() + ";\n",
+                worker_func.name + "();\n",
+                "}).call(this);"
+            ], {"type": "text/javascript"});
+
+            worker_blob_url = window.URL.createObjectURL(blob);
+        }
+        this.yuv2rgb_worker = new Worker(worker_blob_url);
+        this.yuv2rgb_worker.addEventListener('message', function(e) {
+            switch (e.data["cmd"]) {
+            case "converted":
+                var cb = that.yuv2rgb_callbacks[0];
+                that.yuv2rgb_callbacks = that.yuv2rgb_callbacks.splice(1);
+                cb(e.data["data"]["image"]);
+                break;
+
+            default:
+                // ignore unknown commands
+                break;
+            }
+        }, false);
+        this.yuv2rgb_worker.postMessage({"cmd": "start"});
+    } else {
+        this.yuv2rgb_worker = null;
+    }
 };
 
 /**
  * @expose
  */
 Decoder.prototype.free = function() {
+    if (this.yuv2rgb_worker) {
+        this.yuv2rgb_worker.postMessage({"cmd": "stop"});
+        this.yuv2rgb_worker.terminate();
+        this.yuv2rgb_worker = null;
+        this.yuv2rgb_callbacks = null;
+    }
     libde265.de265_free_decoder(this.ctx);
     this.ctx = null;
     _free(this.more);
@@ -385,7 +412,7 @@ Decoder.prototype.decode = function(callback) {
         var img = libde265.de265_get_next_picture(this.ctx);
         if (img) {
             if (this.image_callback) {
-                this.image_callback(new Image(img));
+                this.image_callback(new Image(this, img));
             }
             break;
         }
@@ -397,6 +424,93 @@ Decoder.prototype.decode = function(callback) {
     callback(err);
     return;
 };
+
+function _do_convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, dest) {
+    if (!dest) {
+        dest = new Uint8ClampedArray(w*h*4);
+    }
+    var yval;
+    var uval;
+    var vval;
+    var xpos = 0;
+    var ypos = 0;
+    var w2 = w >> 1;
+    var maxi = w2*h;
+    var yoffset = 0;
+    var uoffset = 0;
+    var voffset = 0;
+    var x2;
+    var i2;
+    for (var i=0; i<maxi; i++) {
+        i2 = i << 1;
+        x2 = (xpos << 1);
+        yval = 1.164 * (y[yoffset + x2] - 16);
+
+        uval = u[uoffset + xpos] - 128;
+        vval = v[voffset + xpos] - 128;
+        dest[(i2<<2)+0] = yval + 1.596 * vval;
+        dest[(i2<<2)+1] = yval - 0.813 * vval - 0.391 * uval;
+        dest[(i2<<2)+2] = yval + 2.018 * uval;
+        dest[(i2<<2)+3] = 0xff;
+
+        yval = 1.164 * (y[yoffset + x2 + 1] - 16);
+        dest[((i2+1)<<2)+0] = yval + 1.596 * vval;
+        dest[((i2+1)<<2)+1] = yval - 0.813 * vval - 0.391 * uval;
+        dest[((i2+1)<<2)+2] = yval + 2.018 * uval;
+        dest[((i2+1)<<2)+3] = 0xff;
+
+        xpos++;
+        if (xpos === w2) {
+            xpos = 0;
+            ypos++;
+            yoffset += stridey;
+            uoffset = ((ypos >> 1) * strideu);
+            voffset = ((ypos >> 1) * stridev);
+        }
+    }
+    return dest;
+};
+
+Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, stridev, imageData, callback) {
+    y = HEAPU8.subarray(y, y+(h*stridey));
+    u = HEAPU8.subarray(u, u+(h*strideu));
+    v = HEAPU8.subarray(v, v+(h*stridev));
+    if (this.yuv2rgb_worker) {
+        var msg = {
+            "cmd": "convert",
+            "data": {
+                "y": new Uint8Array(y),
+                "u": new Uint8Array(u),
+                "v": new Uint8Array(v),
+                "w": w,
+                "h": h,
+                "stridey": stridey,
+                "strideu": strideu,
+                "stridev": stridev
+            }
+        };
+        this.yuv2rgb_callbacks.push(function(data) {
+            if (imageData.data.set) {
+                imageData.data.set(data);
+            } else {
+                var dest = imageData.data;
+                var cnt = dest.length;
+                for (var i=0; i<cnt; i++) {
+                    dest[i] = data[i];
+                }
+            }
+            callback(imageData);
+        });
+        this.yuv2rgb_worker.postMessage(msg);
+        return;
+    }
+
+    _do_convert_yuv2rgb(y, u, v,
+        w, h,
+        stridey, strideu, stridev,
+        imageData.data);
+    callback(imageData);
+}
 
 /**
  * @expose
