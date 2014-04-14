@@ -267,7 +267,7 @@ Image.prototype.display = function(imageData, callback) {
     this.decoder.convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, imageData, callback);
 };
 
-var worker_func = function() {
+function worker_func() {
     self.addEventListener("message", function(e) {
         var data = e.data;
         switch (data["cmd"]) {
@@ -288,7 +288,7 @@ var worker_func = function() {
             break;
         }
     }, 0);
-};
+}
 
 var worker_blob_url = null;
 
@@ -469,7 +469,7 @@ function _do_convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, dest) {
         }
     }
     return dest;
-};
+}
 
 Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, stridev, imageData, callback) {
     y = HEAPU8.subarray(y, y+(h*stridey));
@@ -510,7 +510,7 @@ Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, st
         stridey, strideu, stridev,
         imageData.data);
     callback(imageData);
-}
+};
 
 /**
  * @expose
