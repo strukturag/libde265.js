@@ -300,6 +300,7 @@ var worker_blob_url = null;
 var Decoder = function() {
     this.image_callback = null;
     this.more = _malloc(2);
+    this.stop = false;
     this.ctx = libde265.de265_new_decoder();
     if (typeof Worker !== "undefined" && typeof Uint8ClampedArray !== "undefined" && typeof Blob !== "undefined") {
         var that = this;
@@ -379,6 +380,7 @@ Decoder.prototype.push_data = function(data, pts) {
  * @expose
  */
 Decoder.prototype.flush = function() {
+    this.stop = true;
     return libde265.de265_flush_data(this.ctx);
 };
 
@@ -386,7 +388,7 @@ Decoder.prototype.flush = function() {
  * @expose
  */
 Decoder.prototype.has_more = function() {
-    return getValue(this.more, "i16") !== 0;
+    return !this.stop || getValue(this.more, "i16") !== 0;
 };
 
 /**
@@ -394,19 +396,12 @@ Decoder.prototype.has_more = function() {
  */
 Decoder.prototype.decode = function(callback) {
     var err;
-    setValue(this.more, "i16", 0);
-    while (true) {
+    setValue(this.more, 1, "i16");
+    while (getValue(this.more, "i16") !== 0) {
         err = libde265.de265_decode(this.ctx, this.more);
-        switch (err) {
-        case libde265.DE265_ERROR_WAITING_FOR_INPUT_DATA:
-            setValue(this.more, "i16", 0);
-            err = libde265.DE265_OK;
+        if (!libde265.de265_isOK(err)) {
+            setValue(this.more, 0, "i16");
             break;
-
-        default:
-            if (!libde265.de265_isOK(err)) {
-                setValue(this.more, "i16", 0);
-            }
         }
 
         var img = libde265.de265_get_next_picture(this.ctx);
@@ -414,10 +409,6 @@ Decoder.prototype.decode = function(callback) {
             if (this.image_callback) {
                 this.image_callback(new Image(this, img));
             }
-            break;
-        }
-
-        if (getValue(this.more, "i16") === 0) {
             break;
         }
     }
@@ -627,11 +618,18 @@ RawPlayer.prototype._handle_onload = function(request, event) {
         }
         
         decoder.decode(function(err) {
-            if (!libde265.de265_isOK(err)) {
-                that._set_error(err, libde265.de265_get_error_text(err));
+            switch(err) {
+            case libde265.DE265_ERROR_WAITING_FOR_INPUT_DATA:
+                setTimeout(decode, 0);
                 return;
+
+            default:
+                if (!libde265.de265_isOK(err)) {
+                    that._set_error(err, libde265.de265_get_error_text(err));
+                    return;
+                }
             }
-            
+
             if (remaining > 0 || decoder.has_more()) {
                 setTimeout(decode, 0);
                 return;
