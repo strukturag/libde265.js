@@ -275,6 +275,7 @@ function worker_func() {
             break;
 
         case "stop":
+            this.postMessage({"cmd": "stopped"});
             self.close();
             break;
 
@@ -327,6 +328,11 @@ var Decoder = function() {
                 cb(e.data["data"]["image"]);
                 break;
 
+            case "stopped":
+                that.yuv2rgb_callbacks = null;
+                that = null;
+                break;
+
             default:
                 // ignore unknown commands
                 break;
@@ -344,9 +350,7 @@ var Decoder = function() {
 Decoder.prototype.free = function() {
     if (this.yuv2rgb_worker) {
         this.yuv2rgb_worker.postMessage({"cmd": "stop"});
-        this.yuv2rgb_worker.terminate();
         this.yuv2rgb_worker = null;
-        this.yuv2rgb_callbacks = null;
     }
     libde265.de265_free_decoder(this.ctx);
     this.ctx = null;
