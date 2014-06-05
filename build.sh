@@ -1,12 +1,11 @@
 #!/bin/bash
-export LIBDE265_VERSION=0.6
+export LIBDE265_VERSION=0.7
 
 if [ ! -e "libde265-${LIBDE265_VERSION}.tar.gz" ]; then
     wget https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}/libde265-${LIBDE265_VERSION}.tar.gz
     tar xzf libde265-${LIBDE265_VERSION}.tar.gz
-    patch -p0 < patches/libde265-0.6_disable_sse.diff
     cd libde265-${LIBDE265_VERSION}
-    emconfigure ./configure --disable-dec265 --disable-sherlock265
+    emconfigure ./configure --disable-sse --disable-dec265 --disable-sherlock265
     emmake make
     cd ..
 fi
