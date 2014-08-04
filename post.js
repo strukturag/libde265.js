@@ -213,7 +213,7 @@ var libde265 = {
 
 /**
  * A decoded image
- * 
+ *
  * @constructor
  */
 var Image = function(decoder, img) {
@@ -295,7 +295,7 @@ var worker_blob_url = null;
 
 /**
  * The HEVC/H.265 decoder
- * 
+ *
  * @constructor
  */
 var Decoder = function() {
@@ -514,7 +514,7 @@ libde265.Decoder = Decoder;
 
 /**
  * A simple raw bitstream player interface.
- * 
+ *
  * @constructor
  */
 var RawPlayer = function(canvas) {
@@ -620,7 +620,7 @@ RawPlayer.prototype._handle_onload = function(request, event) {
             that._set_error(err, libde265.de265_get_error_text(err));
             return;
         }
-        
+
         decoder.decode(function(err) {
             switch(err) {
             case libde265.DE265_ERROR_WAITING_FOR_INPUT_DATA:
@@ -638,7 +638,7 @@ RawPlayer.prototype._handle_onload = function(request, event) {
                 setTimeout(decode, 0);
                 return;
             }
-            
+
             decoder.free();
             that.stop();
         });
