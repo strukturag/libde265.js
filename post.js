@@ -113,6 +113,10 @@ var libde265 = {
     DE265_WARNING_NUMBER_OF_THREADS_LIMITED_TO_MAXIMUM: 1022,
     /** @expose */
     DE265_NON_EXISTING_LT_REFERENCE_CANDIDATE_IN_SLICE_HEADER: 1023,
+    /** @expose */
+    DE265_WARNING_CANNOT_APPLY_SAO_OUT_OF_MEMORY: 1024,
+    /** @expose */
+    DE265_WARNING_SPS_MISSING_CANNOT_DECODE_SEI: 1025,
 
     /** @expose */
     de265_get_version: cwrap('de265_get_version', 'string'),
@@ -141,9 +145,12 @@ var libde265 = {
     /** @expose */
     de265_get_image_plane: cwrap('de265_get_image_plane', 'number', ['number', 'number', 'number']),
     /** @expose */
+    de265_get_image_plane_user_data: cwrap('de265_get_image_plane_user_data', 'number', ['number', 'number']),
+    /** @expose */
     de265_get_image_PTS: cwrap('de265_get_image_PTS', 'number', ['number']),
     /** @expose */
     de265_get_image_user_data: cwrap('de265_get_image_user_data', 'number', ['number']),
+    // de265_get_image_NAL_header
 
     /** @expose */
     de265_new_decoder: cwrap('de265_new_decoder', 'number'),
@@ -152,6 +159,8 @@ var libde265 = {
     de265_free_decoder: cwrap('de265_free_decoder', 'number', ['number']),
     /** @expose */
     de265_push_data: cwrap('de265_push_data', 'number', ['number', 'array', 'number', 'number', 'number']),
+    /** @expose */
+    de265_push_end_of_NAL: cwrap('de265_push_end_of_NAL', 'number', ['number']),
     /** @expose */
     de265_push_NAL: cwrap('de265_push_NAL', 'number', ['number', 'array', 'number', 'number', 'number']),
     /** @expose */
@@ -173,6 +182,21 @@ var libde265 = {
     /** @expose */
     de265_get_warning: cwrap('de265_get_warning', 'number', ['number']),
 
+    // de265_set_image_allocation_functions
+    // de265_get_default_image_allocation_functions
+    // de265_set_image_plane
+
+    /** @expose */
+    de265_get_highest_TID: cwrap('de265_get_highest_TID', 'number', ['number']),
+    /** @expose */
+    de265_get_current_TID: cwrap('de265_get_current_TID', 'number', ['number']),
+    /** @expose */
+    de265_set_limit_TID: cwrap('de265_set_limit_TID', 'number', ['number', 'number']),
+    /** @expose */
+    de265_set_framerate_ratio: cwrap('de265_set_framerate_ratio', 'number', ['number', 'number']),
+    /** @expose */
+    de265_change_framerate: cwrap('de265_change_framerate', 'number', ['number', 'number']),
+
     /** @expose */
     DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH: 0, // (bool) Perform SEI hash check on decoded pictures.
     /** @expose */
@@ -185,6 +209,12 @@ var libde265 = {
     DE265_DECODER_PARAM_DUMP_SLICE_HEADERS: 4,
     /** @expose */
     DE265_DECODER_PARAM_ACCELERATION_CODE: 5,    // (int)  enum de265_acceleration, default: AUTO
+    /** @expose */
+    DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES: 6, // (bool)  do not output frames with decoding errors, default: no (output all images)
+    /** @expose */
+    DE265_DECODER_PARAM_DISABLE_DEBLOCKING: 7,   // (bool)  disable deblocking
+    /** @expose */
+    DE265_DECODER_PARAM_DISABLE_SAO: 8,           // (bool)  disable SAO filter
 
     /** @expose */
     de265_acceleration_SCALAR: 0, // only fallback implementation
