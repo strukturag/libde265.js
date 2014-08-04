@@ -10,6 +10,7 @@ if [ ! -e "libde265-${LIBDE265_VERSION}.tar.gz" ]; then
     cd ..
 fi
 
+export TOTAL_MEMORY=268435456
 export EXPORTED_FUNCTIONS="[ \
     '_de265_get_version', \
     '_de265_get_version_number', \
@@ -49,7 +50,7 @@ export EXPORTED_FUNCTIONS="[ \
 echo "Running Emscripten..."
 emcc libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.so \
     -s NO_EXIT_RUNTIME=1 \
-    -s TOTAL_MEMORY=268435456 \
+    -s TOTAL_MEMORY=${TOTAL_MEMORY} \
     -s EXPORTED_FUNCTIONS="${EXPORTED_FUNCTIONS}" \
     -O2 \
     --pre-js pre.js \
@@ -59,7 +60,7 @@ emcc libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.so \
 echo "Running Emscripten (minimized)..."
 emcc libde265-${LIBDE265_VERSION}/libde265/.libs/libde265.so \
     -s NO_EXIT_RUNTIME=1 \
-    -s TOTAL_MEMORY=268435456 \
+    -s TOTAL_MEMORY=${TOTAL_MEMORY} \
     -s EXPORTED_FUNCTIONS="${EXPORTED_FUNCTIONS}" \
     -O3 \
     --pre-js pre.js \
