@@ -1,5 +1,5 @@
 #!/bin/bash
-export LIBDE265_VERSION=0.7
+export LIBDE265_VERSION=0.8
 
 if [ ! -e "libde265-${LIBDE265_VERSION}.tar.gz" ]; then
     wget https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}/libde265-${LIBDE265_VERSION}.tar.gz
