@@ -42,6 +42,7 @@ window.onload = function() {
 
         player = new libde265.RawPlayer(video);
         player.set_status_callback(function(msg, fps) {
+            player.disable_filters(true);
             switch (msg) {
             case "loading":
                 status.innerHTML = "Loading movie...";
