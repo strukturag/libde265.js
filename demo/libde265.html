@@ -40,6 +40,7 @@ window.onload = function() {
             player.stop();
         }
 
+        console.log("Playing with libde265", libde265.de265_get_version());
         player = new libde265.RawPlayer(video);
         player.set_status_callback(function(msg, fps) {
             player.disable_filters(true);
