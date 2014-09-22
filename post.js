@@ -150,6 +150,8 @@ var libde265 = {
     de265_get_image_PTS: cwrap('de265_get_image_PTS', 'number', ['number']),
     /** @expose */
     de265_get_image_user_data: cwrap('de265_get_image_user_data', 'number', ['number']),
+    /** @expose */
+    de265_set_image_user_data: cwrap('de265_set_image_user_data', 'number', ['number', 'number']),
     // de265_get_image_NAL_header
 
     /** @expose */
@@ -161,6 +163,8 @@ var libde265 = {
     de265_push_data: cwrap('de265_push_data', 'number', ['number', 'array', 'number', 'number', 'number']),
     /** @expose */
     de265_push_end_of_NAL: cwrap('de265_push_end_of_NAL', 'number', ['number']),
+    /** @expose */
+    de265_push_end_of_frame: cwrap('de265_push_end_of_frame', 'number', ['number']),
     /** @expose */
     de265_push_NAL: cwrap('de265_push_NAL', 'number', ['number', 'array', 'number', 'number', 'number']),
     /** @expose */
