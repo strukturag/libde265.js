@@ -649,6 +649,7 @@ RawPlayer.prototype._reset = function() {
     this.frames = 0;
     this.image_data = null;
     this.running = false;
+    this.pending_image_data = null;
 };
 
 /** @expose */
@@ -699,7 +700,17 @@ RawPlayer.prototype._display_image = function(image) {
 
     var that = this;
     image.display(this.image_data, function(display_image_data) {
-        that.ctx.putImageData(display_image_data, 0, 0);
+        if (window.requestAnimationFrame) {
+            that.pending_image_data = display_image_data;
+            window.requestAnimationFrame(function() {
+                if (that.pending_image_data) {
+                    that.ctx.putImageData(that.pending_image_data, 0, 0);
+                    that.pending_image_data = null;
+                }
+            });
+        } else {
+            that.ctx.putImageData(display_image_data, 0, 0);
+        }
     });
 };
 
