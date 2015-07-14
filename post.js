@@ -367,12 +367,19 @@ var Decoder = function() {
         if (worker_blob_url === null) {
             // load worker from inplace blob so we don't have to depend
             // on additional external files
+            var worker_func_data = worker_func.toString();
+            var worker_func_name = worker_func.name;
+            if (!worker_func_name) {
+                // Get name of function for older browsers and IE.
+                // See http://stackoverflow.com/a/17923727/608954
+                worker_func_name = /^function\s+([\w\$]+)\s*\(/.exec(worker_func_data)[1];
+            }
             var blob = new Blob([
                 "(function() {\n",
                 _do_convert_yuv420.toString() + ";\n",
                 _do_convert_yuv2rgb.toString() + ";\n",
-                worker_func.toString() + ";\n",
-                worker_func.name + "();\n",
+                worker_func_data + ";\n",
+                worker_func_name + "();\n",
                 "}).call(this);"
             ], {"type": "text/javascript"});
 
