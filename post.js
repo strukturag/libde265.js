@@ -54,6 +54,14 @@ var libde265 = {
     DE265_ERROR_WAITING_FOR_INPUT_DATA: 13,
     /** @expose */
     DE265_ERROR_CANNOT_PROCESS_SEI: 14,
+    /** @expose */
+    DE265_ERROR_PARAMETER_PARSING: 15,
+    /** @expose */
+    DE265_ERROR_NO_INITIAL_SLICE_HEADER: 16,
+    /** @expose */
+    DE265_ERROR_PREMATURE_END_OF_SLICE: 17,
+    /** @expose */
+    DE265_ERROR_UNSPECIFIED_DECODING_ERROR: 18,
 
     // --- errors that should become obsolete in later libde265 versions ---
 
@@ -62,6 +70,8 @@ var libde265 = {
     /** @expose */
     DE265_ERROR_MAX_NUMBER_OF_SLICES_EXCEEDED: 501,
     //DE265_ERROR_SCALING_LIST_NOT_IMPLEMENTED: 502, obsolete
+    /** @expose */
+    DE265_ERROR_NOT_IMPLEMENTED_YET: 502,
 
     // --- warnings ---
 
@@ -117,6 +127,8 @@ var libde265 = {
     DE265_WARNING_CANNOT_APPLY_SAO_OUT_OF_MEMORY: 1024,
     /** @expose */
     DE265_WARNING_SPS_MISSING_CANNOT_DECODE_SEI: 1025,
+    /** @expose */
+    DE265_WARNING_COLLOCATED_MOTION_VECTOR_OUTSIDE_IMAGE_AREA: 1026,
 
     /** @expose */
     de265_get_version: cwrap('de265_get_version', 'string'),
@@ -126,11 +138,13 @@ var libde265 = {
     de265_get_error_text: cwrap('de265_get_error_text', 'string', ['number']),
     /** @expose */
     de265_isOK: cwrap('de265_isOK', 'number', ['number']),
+    /** @expose */
+    de265_set_verbosity: cwrap('de265_set_verbosity', 'number', ['number']),
 
     /** @expose */
     de265_chroma_mono: 0,
     /** @expose */
-    de265_chroma_420: 1,  // currently the only used format
+    de265_chroma_420: 1,
     /** @expose */
     de265_chroma_422: 2,
     /** @expose */
@@ -142,6 +156,8 @@ var libde265 = {
     de265_get_image_height: cwrap('de265_get_image_height', 'number', ['number', 'number']),
     /** @expose */
     de265_get_chroma_format: cwrap('de265_get_chroma_format', 'number', ['number']),
+    /** @expose */
+    de265_get_bits_per_pixel: cwrap('de265_get_bits_per_pixel', 'number', ['number', 'number']),
     /** @expose */
     de265_get_image_plane: cwrap('de265_get_image_plane', 'number', ['number', 'number', 'number']),
     /** @expose */
@@ -235,6 +251,10 @@ var libde265 = {
     /** @expose */
     de265_acceleration_AVX2 : 60,    // not implemented yet
     /** @expose */
+    de265_acceleration_ARM  : 70,
+    /** @expose */
+    de265_acceleration_NEON : 80,
+    /** @expose */
     de265_acceleration_AUTO : 10000,
 
     /** @expose */
@@ -289,16 +309,20 @@ Image.prototype.get_height = function() {
 Image.prototype.display = function(imageData, callback) {
     var w = this.get_width();
     var h = this.get_height();
+    var chroma = libde265.de265_get_chroma_format(this.img);
     var stride = _malloc(4);
     var y = libde265.de265_get_image_plane(this.img, 0, stride);
     var stridey = getValue(stride, "i32");
+    var bppy = libde265.de265_get_bits_per_pixel(this.img, 0);
     var u = libde265.de265_get_image_plane(this.img, 1, stride);
     var strideu = getValue(stride, "i32");
+    var bppu = libde265.de265_get_bits_per_pixel(this.img, 1);
     var v = libde265.de265_get_image_plane(this.img, 2, stride);
     var stridev = getValue(stride, "i32");
+    var bppv = libde265.de265_get_bits_per_pixel(this.img, 2);
     _free(stride);
 
-    this.decoder.convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, imageData, callback);
+    this.decoder.convert_yuv2rgb(chroma, y, u, v, w, h, stridey, strideu, stridev, bppy, bppu, bppv, imageData, callback);
 };
 
 function worker_func() {
@@ -314,7 +338,7 @@ function worker_func() {
             break;
 
         case "convert":
-            var img = _do_convert_yuv2rgb(data["data"]["y"], data["data"]["u"], data["data"]["v"], data["data"]["w"], data["data"]["h"], data["data"]["stridey"], data["data"]["strideu"], data["data"]["stridev"]);
+            var img = _do_convert_yuv2rgb(data["data"]["chroma"], data["data"]["y"], data["data"]["u"], data["data"]["v"], data["data"]["w"], data["data"]["h"], data["data"]["stridey"], data["data"]["strideu"], data["data"]["stridev"], data["data"]["bppy"], data["data"]["bppu"], data["data"]["bppv"]);
             this.postMessage({"cmd": "converted", "data": {"image": img}});
             break;
 
@@ -345,6 +369,7 @@ var Decoder = function() {
             // on additional external files
             var blob = new Blob([
                 "(function() {\n",
+                _do_convert_yuv420.toString() + ";\n",
                 _do_convert_yuv2rgb.toString() + ";\n",
                 worker_func.toString() + ";\n",
                 worker_func.name + "();\n",
@@ -469,10 +494,7 @@ Decoder.prototype.decode = function(callback) {
     return;
 };
 
-function _do_convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, dest) {
-    if (!dest) {
-        dest = new Uint8ClampedArray(w*h*4);
-    }
+function _do_convert_yuv420(y, u, v, w, h, stridey, strideu, stridev, bppy, bppu, bppv, dest) {
     var yval;
     var uval;
     var vval;
@@ -512,10 +534,43 @@ function _do_convert_yuv2rgb(y, u, v, w, h, stridey, strideu, stridev, dest) {
             voffset = ((ypos >> 1) * stridev);
         }
     }
+}
+
+function _do_convert_yuv2rgb(chroma, y, u, v, w, h, stridey, strideu, stridev, bppy, bppu, bppv, dest) {
+    if (!dest) {
+        dest = new Uint8ClampedArray(w*h*4);
+    }
+    // NOTE: we can't use libde265 constants here as the function can also be
+    // run inside the Worker where "libde265" is not available.
+    switch (chroma) {
+    case 0:  /* libde265.de265_chroma_mono */
+        // TODO(fancycode): implement me
+        console.log("Chroma format not implemented yet", chroma, bppy, bppu, bppv);
+        break;
+    case 1:  /* libde265.de265_chroma_420 */
+        if (bppy !== 8 || bppu !== 8 || bppv !== 8) {
+            // TODO(fancycode): implement me
+            console.log("Chroma format not implemented yet", chroma, bppy, bppu, bppv);
+        } else {
+            _do_convert_yuv420(y, u, v, w, h, stridey, strideu, stridev, bppy, bppu, bppv, dest);
+        }
+        break;
+    case 2:  /* libde265.de265_chroma_422 */
+        // TODO(fancycode): implement me
+        console.log("Chroma format not implemented yet", chroma, bppy, bppu, bppv);
+        break;
+    case 3:  /* libde265.de265_chroma_444 */
+        // TODO(fancycode): implement me
+        console.log("Chroma format not implemented yet", chroma, bppy, bppu, bppv);
+        break;
+    default:
+        console.log("Unsupported chroma format", chroma, bppy, bppu, bppv);
+        break;
+    }
     return dest;
 }
 
-Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, stridev, imageData, callback) {
+Decoder.prototype.convert_yuv2rgb = function(chroma, y, u, v, w, h, stridey, strideu, stridev, bppy, bppu, bppv, imageData, callback) {
     y = HEAPU8.subarray(y, y+(h*stridey));
     u = HEAPU8.subarray(u, u+(h*strideu));
     v = HEAPU8.subarray(v, v+(h*stridev));
@@ -523,6 +578,7 @@ Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, st
         var msg = {
             "cmd": "convert",
             "data": {
+                "chroma": chroma,
                 "y": new Uint8Array(y),
                 "u": new Uint8Array(u),
                 "v": new Uint8Array(v),
@@ -530,7 +586,10 @@ Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, st
                 "h": h,
                 "stridey": stridey,
                 "strideu": strideu,
-                "stridev": stridev
+                "stridev": stridev,
+                "bppy": bppy,
+                "bppu": bppu,
+                "bppv": bppv
             }
         };
         this.yuv2rgb_callbacks.push(function(data) {
@@ -549,9 +608,11 @@ Decoder.prototype.convert_yuv2rgb = function(y, u, v, w, h, stridey, strideu, st
         return;
     }
 
-    _do_convert_yuv2rgb(y, u, v,
+    _do_convert_yuv2rgb(chroma,
+        y, u, v,
         w, h,
         stridey, strideu, stridev,
+        bppy, bppu, bppv,
         imageData.data);
     callback(imageData);
 };

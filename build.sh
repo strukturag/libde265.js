@@ -1,5 +1,5 @@
 #!/bin/bash
-export LIBDE265_VERSION=0.9
+export LIBDE265_VERSION=1.0.2
 
 if [ ! -e "libde265-${LIBDE265_VERSION}.tar.gz" ]; then
     wget https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}/libde265-${LIBDE265_VERSION}.tar.gz
@@ -19,9 +19,11 @@ export EXPORTED_FUNCTIONS="[ \
     '_de265_get_version_number', \
     '_de265_get_error_text', \
     '_de265_isOK', \
+    '_de265_set_verbosity', \
     '_de265_get_image_width', \
     '_de265_get_image_height', \
     '_de265_get_chroma_format', \
+    '_de265_get_bits_per_pixel', \
     '_de265_get_image_plane', \
     '_de265_get_image_plane_user_data', \
     '_de265_get_image_PTS', \
