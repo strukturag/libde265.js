@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>libde265.js</title>
+<script type="text/javascript" src="static/libde265.js"></script>
+<script>
+
+var player = null;
+
+window.onload = function() {
+    var URL = (window.URL || window.webkitURL);
+    var websocket_port = 8080;
+
+    // Connect to the specified port
+    var url_address = "ws://localhost:" + websocket_port + "/websocket";
+
+    var video = document.getElementById("video");
+    var status = document.getElementById("status");
+
+    var playback = function(event) {
+        event.preventDefault();
+        if (player) {
+            player.stop();
+        }
+
+        console.log("Playing with libde265", libde265.de265_get_version());
+        player = new libde265.StreamPlayer(video);
+        player.set_status_callback(function(msg, fps) {
+            player.disable_filters(true);
+            switch (msg) {
+            case "loading":
+                status.innerHTML = "Loading movie...";
+                break;
+            case "initializing":
+                status.innerHTML = "Initializing...";
+                break;
+            case "playing":
+                status.innerHTML = "Playing...";
+                break;
+            case "stopped":
+                status.innerHTML = "";
+                break;
+            case "fps":
+                status.innerHTML = Number(fps).toFixed(2) + " fps";
+                break;
+            default:
+                status.innerHTML = msg;
+            }
+        });
+        player.playback(url_address);
+    };
+
+    var button = document.getElementById("play");
+    if (button.addEventListener) {
+        button.addEventListener("click", playback, false);
+    } else if (button.attachEvent){
+        button.attachEvent('onclick', playback);
+    }
+}
+</script>
+<body>
+    <h1>libde265.js</h1>
+    <a href="https://github.com/strukturag/libde265.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+    <div>
+        <div>Simple HEVC/H.265 bitstream player in pure JavaScript.</div>
+        <div><small>Copyright &copy; 2014 by <a href="http://www.struktur.de">struktur AG</a></small></div>
+        <canvas id="video" width="0" height="0"></canvas>
+    </div>
+    <button id="play">Play</button>
+    <span id="status"></span>
+</body>
+</html>
