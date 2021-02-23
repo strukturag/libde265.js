@@ -34,3 +34,5 @@ https://strukturag.github.io/libde265.js/.
 [1]: http://emscripten.org
 
 Copyright (c) 2014 struktur AG
+
+fixes gewisser 2021
